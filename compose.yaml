@@ -1,0 +1,43 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8005:5000"
+    volumes:
+      - db_data:/app
+
+  redis:
+    image: "redis:alpine"
+
+  redis-exporter:
+    image: "oliver006/redis_exporter:latest"
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "redis:6379"
+    depends_on:
+      - redis
+
+  prometheus:
+    build:
+      context: .
+      dockerfile: Dockerfile.prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      - web
+      - redis-exporter
+
+  grafana:
+    image: "grafana/grafana"
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
+  prometheus_data:
